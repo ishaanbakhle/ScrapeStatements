@@ -1,2 +1,2 @@
-# ScrapeStatements
-Scrapy module to extract member statement data from ProPublica
+# ScrapeStatements :us:
+A scrapy module to extract member statement data from ProPublica.
