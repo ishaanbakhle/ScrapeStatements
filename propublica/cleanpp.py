@@ -1,83 +1,85 @@
 import csv
 import pandas as pd
+import numpy as np
 
-data = pd.read_json('/Users/ishaanbakhle/Desktop/Projects/MemberStatements/propublica/propublica/spiders/propublica.json')
-
-member_list = data["Rows"][0]
-# dict = {'Attr':splitMember(member_list[0])}
-# df = pd.DataFrame(dict)
-# df
 def splitMember(member):
     """
-    Parses representative profiles from propublica statement tables
+    Parses member html for Processing
     """
-    mem_less = member.split("<")
-    mem_split = []
-    for i in mem_less:
-        mem_split.append(i.split(">"))
-    return(mem_split)
-
-def getName(splitmem):
-    """
-    Returns member name
-    """
-    attr = splitmem[9]
-    return(attr[1][1:])
-
-def getLink(splitmem):
-    """
-    Returns link from splitMember output
-    """
-    attr = splitmem[17]
-    return(attr[0].split('a href=')[1].split('"')[1])
-
-def getTitle(splitmem):
-    """
-    Returns statement title from splitMember output
-    """
-    attr = splitmem[17]
-    return(attr[1])
-
-def getDate(splitmem):
-    """
-    Returns statement date from splitMember output
-    """
-    attr = splitmem[2]
-    return(attr[0].split("data-title=")[1].split('"')[1])
-
+    member_split = member.split('\n')
+    split_arr = []
+    for i in member_split:
+        split_arr.append(i.split('>'))
+    return split_arr
 
 def getParty(splitmem):
     """
-    Returns party from splitMember output
     """
-    attr = splitmem[1][0].split('"')
-    return(attr[1])
+    attr = splitmem[0]
+    return(attr[0].split('"'))[1]
 
-def getState(splitmem):
+def getDate(splitmem):
     """
-    Returns party from splitMember output
     """
-    attr = splitmem[14]
-    return(attr[1])
+    attr = splitmem[1]
+    return(attr[0].split('"')[3])
 
+def getName(splitmem):
+    """
+    """
+    attr = splitmem[2]
+    return(attr[4].split('</a')[0])
 
+def getStateDistrict(splitmem):
+    """
+    """
+    attr = splitmem[5]
+    return(attr[1].split('</')[0])
+
+def getTitle(splitmem):
+    """
+    """
+    attr = splitmem[6]
+    return(attr[2].split('</')[0])
+
+def getLink(splitmem):
+    """
+    """
+    attr = splitmem[6]
+    return(attr[1].split('"')[1])
+
+data = pd.read_csv('/Users/ishaanbakhle/Desktop/Projects/MemberStatements/propublica/propublica/spiders/propublica.csv')
+ds = data["Rows"]
 
 dates = []
-member_names = []
+names = []
 parties = []
 states_districts = []
 titles = []
 links = []
+for page in ds:
+    split_page = page.split('<tr')
+    split_arr = []
+    for i in split_page:
+        if len(i) > 3:
+            split_arr.append(i)
+    for member in split_arr:
+        mem = splitMember(member)
+        if len(mem) >= 6:
+            dates.append(getDate(mem))
+            names.append(getName(mem))
+            parties.append(getParty(mem))
+            states_districts.append(getStateDistrict(mem))
+            titles.append(getTitle(mem))
+            links.append(getLink(mem))
+        else:
+            dates.append(np.nan)
+            names.append(np.nan)
+            parties.append(np.nan)
+            states_districts.append(np.nan)
+            titles.append(np.nan)
+            links.append(np.nan)
 
-for member in member_list:
-    split = splitMember(member)
-    dates.append(getDate(split))
-    member_names.append(getName(split))
-    parties.append(getParty(split))
-    states_districts.append(getState(split))
-    titles.append(getTitle(split))
-    links.append(getLink(split))
-
-dict = {'Date':dates, 'Member Name':member_names, 'Parties':parties, 'State/District':states_districts,'Title':titles,'Links':links}
+dict = {'Date':dates,'Member Name':names, 'Party':parties,'Represented Constituency':states_districts,'Statement Title':titles, 'Link':links}
 df = pd.DataFrame(dict)
-df
+df.to_excel('ProPublica_ClimateChange.xlsx')
